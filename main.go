@@ -1,17 +1,16 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"database/sql"
 
-
+	"github.com/Decyphr/rss-agg/database"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/cors"
 	"github.com/joho/godotenv"
-	"github.com/Decyphr/rss-agg/database"
 
 	_ "github.com/lib/pq"
 )
@@ -70,10 +69,7 @@ func main() {
 
 	log.Printf("Server starting on port %v", portString)
 
-	err := srv.ListenAndServe()
-	if err != nil {
-		log.Fatal(err)
-	}
+	srv.ListenAndServe()
 	
 	fmt.Println("Port:", portString)
 }
