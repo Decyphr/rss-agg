@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/Decyphr/rss-agg/internal/database"
 	"github.com/go-chi/chi"
@@ -20,8 +21,6 @@ type apiConfig struct {
 }
 
 func main() {
-	fmt.Println("Hello, World!")
-
 	godotenv.Load()
 
 	portString := os.Getenv("PORT")
@@ -40,9 +39,14 @@ func main() {
 		log.Fatal(err)
 	}
 
+	db := database.New(conn)
 	apiCfg := apiConfig{
-		DB: database.New(conn),
+		DB: db,
 	}
+
+	// use go routine to start scraping
+	// we do this because startScraping() is a long-running function
+	go startScraping(db, 10, time.Minute)
 
 	router := chi.NewRouter()
 
@@ -67,6 +71,14 @@ func main() {
 	// Feeds
 	v1Router.Get("/feeds", apiCfg.handlerGetFeeds)
 	v1Router.Post("/feeds", apiCfg.middlewareAuth(apiCfg.handlerCreateFeed))
+
+	// Feed Follows
+	v1Router.Get("/feed_follows", apiCfg.middlewareAuth(apiCfg.handlerGetFeedFollows))
+	v1Router.Post("/feed_follows", apiCfg.middlewareAuth(apiCfg.handlerCreateFeedFollow))
+	v1Router.Delete("/feed_follows/{feedFollowID}", apiCfg.middlewareAuth(apiCfg.handlerDeleteFeedFollow))
+
+	// Posts
+	v1Router.Get("/posts", apiCfg.middlewareAuth(apiCfg.handlerGetPostsForUser))
 
 	router.Mount("/v1", v1Router)
 
